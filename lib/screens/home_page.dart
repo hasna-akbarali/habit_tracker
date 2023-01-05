@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/data/habit_database.dart';
+import 'package:hive/hive.dart';
 
 import '../components/add_habit_fab.dart';
 import '../components/habit_tile.dart';
@@ -12,25 +14,44 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  //data structure for list of habits
-  List listOfHabits = [
-    ['Morning Run', false],
-    ['Reading Book', true],
-    ['Coding App', true]
-  ];
+  HabitDatabase db = HabitDatabase();
+  final _myBox = Hive.box('Habit_Database');
+
+  // //data structure for list of habits
+  // List listOfHabits = [
+  //   ['Morning Run', false],
+  //   ['Reading Book', true],
+  //   ['Coding App', true]
+  // ];
   bool isCompleted = false;
   final habitController = TextEditingController();
 
+  @override
+  void initState() {
+    // check if the user is using the app for the first time
+    // if yes then initialize the database within default value
+    if (_myBox.get('CURRENT_HABIT_LIST') == null) {
+      db.createDefaultHabitDatabase();
+    }
+
+    // if no then load the previous data to display on to the screen
+    else {
+      db.loadHabitDatabase();
+    }
+
+    super.initState();
+  }
+
   void onHabitCompleted(bool? value, int index) {
     setState(() {
-      listOfHabits[index][1] = value!;
+      db.listOfHabits[index][1] = value!;
     });
   }
 
   void onSave() {
     //add a habit
     setState(() {
-      listOfHabits.add([habitController.text, false]);
+      db.listOfHabits.add([habitController.text, false]);
     });
     // clear the text
     habitController.clear();
@@ -41,7 +62,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void onEditHabit(index) {
     //add a habit
     setState(() {
-      listOfHabits[index][0] = habitController.text;
+      db.listOfHabits[index][0] = habitController.text;
     });
     // clear the text
     habitController.clear();
@@ -69,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void onDelete(int index) {
     setState(() {
-      listOfHabits.removeAt(index);
+      db.listOfHabits.removeAt(index);
     });
   }
 
@@ -102,11 +123,11 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       backgroundColor: Colors.black,
       body: ListView.builder(
-        itemCount: listOfHabits.length,
+        itemCount: db.listOfHabits.length,
         itemBuilder: (BuildContext context, int index) {
           return HabitTile(
-            isCompleted: listOfHabits[index][1],
-            habitActivity: listOfHabits[index][0],
+            isCompleted: db.listOfHabits[index][1],
+            habitActivity: db.listOfHabits[index][0],
             onChanged: (value) => onHabitCompleted(value, index),
             onDelete: (context) => onDelete(index),
             onEdit: (context) => onEdit(index),
